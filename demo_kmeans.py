@@ -84,7 +84,7 @@ def main(args):
     #Load data
     print("Load data...")
     X = np.genfromtxt(data, delimiter=',')    
-    means = init_kmeans(X, centers, mode)
+    means = init_kmeans(X, centers, 'kmeans++')
     
     #Run KMeans
     _, axes = arrange_subplots(2)
@@ -92,14 +92,14 @@ def main(args):
     old_delta = 0
     
     print("Compute KMeans...")
-    for i, (Y, means, delta) in enumerate(kmeans(X, means)): #Extract update steps of the generator
+    for Y, means, delta, step in kmeans(X, means): #Extract update steps of the generator
         print("Mean update:\n    {}".format(means))
         
         axes[0].clear()
         plot2D_kmeans(axes[0], X, Y, means)
-        axes[0].title.set_text("KMeans step: {}".format(i))
+        axes[0].title.set_text("KMeans step: {}".format(step))
         
-        axes[1].plot([i-1, i], [old_delta, delta], c='r')
+        axes[1].plot([step-1, step], [old_delta, delta], c='r')
         old_delta = delta
         
         plt.show(block=False)
