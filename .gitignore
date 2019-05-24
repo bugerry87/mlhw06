@@ -1,0 +1,15 @@
+#Python
+*.pyc
+__pycache__
+
+#Matlab
+.asv
+
+#3rd-party
+*.zip
+*.rar
+*.tar
+*.out
+
+#Rich files
+*.docx
