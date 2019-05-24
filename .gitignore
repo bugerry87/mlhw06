@@ -13,3 +13,6 @@ __pycache__
 
 #Rich files
 *.docx
+
+#Folders
+junk/
