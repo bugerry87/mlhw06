@@ -84,7 +84,7 @@ def main(args):
     #Load data
     print("Load data...")
     X = np.genfromtxt(data, delimiter=',')    
-    means = X[np.random.choice(range(X.shape[0]), centers),:] #Random select a point of the dataset
+    means = init_kmeans(X, centers, mode)
     
     #Run KMeans
     _, axes = arrange_subplots(2)

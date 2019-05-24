@@ -44,5 +44,34 @@ def kmeans(X, means, epsilon=0):
         if delta <= epsilon:
             break
     pass
-    
+
+
+def init_kmeans(X, K, mode='free'):
+    N = X.shape[0]
+    d = X.shape[1]
+    means = np.zeros([K,d])
+    if mode=='select':
+        means = X[np.random.choice(range(N), K),:]
+    if mode=='uniform':
+        pass
+    elif mode=='normal':
+        pass
+    elif mode=='kmeans++':
+        #https://stackoverflow.com/questions/5466323/how-exactly-does-k-means-work
+        means[0,:] = X[np.random.choice(range(N), 1),:]
+        for k in range(K):
+            W = np.sum((X-m)**2, axis=1)
+            p = W/np.sum(W) #probabillity
+            cumprobs = probs.cumsum()
+            r = scipy.rand()
+            for j,p in enumerate(cumprobs):
+                if r < p:
+                    i = j
+                    break
+                C.append(X[i])
+            return C
+        
+    else: #free
+        pass
+    return means
     
