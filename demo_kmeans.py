@@ -77,7 +77,7 @@ def main(args):
     epsilon = args.epsilon if args.epsilon else myinput(
         "The convergenc threshold.\n" +
         "    epsilon (0): ",
-        default=0,
+        default=0.0,
         cast=float
         )
     
@@ -92,7 +92,7 @@ def main(args):
     old_delta = 0
     
     print("Compute KMeans...")
-    for Y, means, delta, step in kmeans(X, means): #Extract update steps of the generator
+    for Y, means, delta, step in kmeans(X, means, epsilon): #Extract update steps of the generator
         print("Mean update:\n    {}".format(means))
         
         axes[0].clear()
