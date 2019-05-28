@@ -7,6 +7,18 @@ from itertools import chain
 
 
 def square_mag(a, b):
+    ''' square_mag(a, b) -> squared magnitude
+    Calculates the row-wise squared magnitude.
+    This function is preferably used for distance comparisons,
+    because taking a square root has a high computation time.
+        np.sum((a-b)**2, axis=1)
+    
+    Args:
+        a: numpy.ndarray
+        b: numpy.ndarray
+    Returns:
+        The row-wise squared magnitude of a and b.
+    '''
     return np.sum((a-b)**2, axis=1)
 
 def kmeans(X, means, epsilon=0.0, max_it=100):
@@ -84,7 +96,7 @@ def init_kmeans(X, K, mode='zeros'):
     elif mode=='normal':
         pass
     elif mode=='kmeans++':
-        #https://stackoverflow.com/questions/5466323/how-exactly-does-k-means-work
+        #guided by https://stackoverflow.com/questions/5466323/how-exactly-does-k-means-work
         means[0,:] = X[np.random.choice(range(N), 1),:] #pick one
         for k in range(1,K):
             W = square_mag(X, means[k-1]) #get the distances
@@ -97,6 +109,16 @@ def init_kmeans(X, K, mode='zeros'):
 
 
 def dbscan(X, points, radius):
+    ''' dbscan(X, points, radius) -> yields Y, x, step
+    Simple DBScan clustering with one path following agent.
+    Takes long computation time, because almost every point needs to be checked.
+    Otherwise it could not complete the pathfinding.
+    The utilization of the radius is very low.
+    
+    Args:
+        X:
+    '''
+    #guided by https://github.com/chrisjmccormick/dbscan
     N = X.shape[0]
     Y = np.zeros(N)
     radius = radius**2
@@ -120,8 +142,8 @@ def dbscan(X, points, radius):
     
     def scan(i):
         n = square_mag(X, X[i]) <= radius
+        n[i] = False #Do not count the current core point.
         if sum(n) >= points:
-            n[i] = False
             n = np.logical_and(n, np.logical_or(Y==0, Y==-1))
             Y[n] = C
             return np.where(n)[0]
