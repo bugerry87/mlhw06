@@ -141,10 +141,16 @@ def dbscan(X, points, radius):
         pass
     
     def scan(i):
+        ''' scan(i) -> yields n
+        The core function of dbscan.
+        Check the given point under index i to be:
+        core-point, border-point, or noice.
+        
+        '''
         n = square_mag(X, X[i]) <= radius
-        n[i] = False #Do not count the current core point.
         if sum(n) >= points:
-            n = np.logical_and(n, np.logical_or(Y==0, Y==-1))
+            n[i] = False #Do not count the current core point.
+            n = np.logical_and(n, np.logical_or(Y==0, Y==-1)) #check for unprocessed points
             Y[n] = C
             return np.where(n)[0]
         else:
