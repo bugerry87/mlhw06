@@ -3,6 +3,7 @@
 '''
 
 import numpy as np
+from itertools import chain
 
 
 def square_mag(a, b):
@@ -95,35 +96,46 @@ def init_kmeans(X, K, mode='zeros'):
     return means
 
 
-def dbscan(X, n, r):
+def dbscan(X, points, radius):
     N = X.shape[0]
     Y = np.zeros(N)
-    r = r**2
+    radius = radius**2
+    C = 1
+    step=0
     
     def pick_next():
-        ''' pick_next() -> yields x
+        ''' pick_next() -> yields i
         A generator to pick next unlabeled point.
         
         Yields:
-            i: The next unlabeled datapoint.
+            i: The next index of unlabeled datapoint.
         '''
         while True:
-            i = Y.searchsorted(0, 'right') #'searchsorted' is faster than 'any' or 'where'
-            if i != -1:
-                yield X[i]
-            else:
+            i = np.nonzero(Y==0)[0]
+            if i.size == 0:
                 break
+            else:
+                yield i[0]
         pass
     
-    def find_neighbors(x):
-        i = square_mag(X, x) <= r
-        return i
+    def scan(i):
+        n = square_mag(X, X[i]) <= radius
+        if sum(n) >= points:
+            n[i] = False
+            n = np.logical_and(n, np.logical_or(Y==0, Y==-1))
+            Y[n] = C
+            return np.where(n)[0]
+        else:
+            Y[n] = -1
+            return np.ndarray(0)
+        pass
+    
+    for i in pick_next():
+        F = [i]
+        for i in F:
+            F.extend(scan(i).tolist())
+            step += 1
+            yield Y, X[i], step
+        C += 1
+    pass
 
-    def cluster():
-        pass
-    
-    for C, x in enumerate(pick_next()):
-        i = find_neighbors(x)
-        if sum(i) >= n:
-            Y[i] = C+1
-            
