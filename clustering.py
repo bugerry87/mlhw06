@@ -2,8 +2,12 @@
 
 '''
 
+#Global libs
 import numpy as np
-from itertools import chain
+
+
+#Local libs
+import kernel
 
 
 def square_mag(a, b):
@@ -21,51 +25,8 @@ def square_mag(a, b):
     '''
     return np.sum((a-b)**2, axis=1)
 
-def kmeans(X, means, epsilon=0.0, max_it=100):
-    ''' kmeans(X, means, epsilon=0.0) -> yields Y,  means, delta, step
-    A generator for simple KMeans clustering.
-    
-    Usage:
-        See demo_kmeans.py
-    Args:
-        X: The data N-by-d, where
-            N=num datapoints
-            d=dimensions
-        means: The cluster centers.
-        epsilon: Convergence threshold.
-            (default=0)
-    Yields:
-        Y: The labels or cluster association.
-        means: The updated cluster centers.
-        delta: The distance to the update step.
-        step: The iteration step.
-    '''
-    N = X.shape[0]      #N: Size of the dataset
-    K = means.shape[0]  #K: Number of clusters
-    W = np.zeros([N,K]) #W: Distance (Weight) matrix
-    Y = np.zeros(N)     #Y: labels
-    delta = None
-    
-    for step in range(max_it):
-        for k, m in enumerate(means):
-            W[:,k] = square_mag(X, m) #calc square distances
-        
-        Y = np.argmin(W, axis=1) #find closest
-        
-        tmp = means.copy()
-        for k in range(K):
-            means[k,:] = np.mean(X[Y==k,:], axis=0) #calc the means
-        means[np.isnan(means)] = 0.0 #prevent the apocalypse
-        
-        delta = np.sum((tmp - means)**2) #calc the delta of change
-        yield Y, means, delta, step #yield for mean update
-        
-        if delta <= epsilon:
-            break #converge if change event is lower-equal than epsilon
-    pass
 
-
-KMEANS_INIT_MODES = ['zeros', 'select', 'uniform', 'normal', 'kmeans++']
+KMEANS_INIT_MODES = ('zeros', 'select', 'uniform', 'normal', 'kmeans++')
 def init_kmeans(X, K, mode='zeros'):
     ''' init_kmeans(X, K, mode='free') -> means
     Initialize K cluster means on dataset X.
@@ -89,7 +50,7 @@ def init_kmeans(X, K, mode='zeros'):
     '''
     N = X.shape[0]
     d = X.shape[1]
-    means = np.zeros([K,d])
+    means = np.zeros((K,d))
     if mode=='select':
         means = X[np.random.choice(range(N), K),:]
     if mode=='uniform':
@@ -107,6 +68,94 @@ def init_kmeans(X, K, mode='zeros'):
     else: #zeros
         pass
     return means
+
+
+def kmeans(X, means, epsilon=0.0, max_it=1000):
+    ''' kmeans(X, means, epsilon=0.0) -> yields Y,  means, delta, step
+    A generator for simple KMeans clustering.
+    
+    Usage:
+        See demo_kmeans.py
+    Args:
+        X: The data N-by-d, where
+            N=num datapoints
+            d=dimensions
+        means: The cluster centers.
+        epsilon: Convergence threshold.
+            (default=0)
+    Yields:
+        Y: The labels or cluster association.
+        means: The updated cluster centers.
+        delta: The distance to the update step.
+        step: The iteration step.
+    '''
+    N = X.shape[0]      #N: Size of the dataset
+    K = means.shape[0]  #K: Number of clusters
+    W = np.zeros((N,K)) #W: Distance (Weight) matrix
+    delta = None
+    
+    for step in range(max_it):
+        for k, m in enumerate(means):
+            W[:,k] = square_mag(X, m) #calc square distances
+        
+        Y = np.argmin(W, axis=1) #find closest
+        
+        tmp = means.copy()
+        for k in range(K):
+            means[k,:] = np.mean(X[Y==k,:], axis=0) #calc the means
+        means[np.isnan(means)] = 0.0 #prevent the apocalypse
+        
+        delta = np.sum((tmp - means)**2) #calc the delta of change
+        yield Y, means, delta, step #yield for mean update
+        
+        if delta <= epsilon:
+            break #converge if change event is lower-equal than epsilon
+    pass
+
+
+def kernel_trick(gram, C):
+    N = gram.shape[0]
+    K = C.shape[1]
+    A = np.sum(C,axis=0)
+    ones = np.ones((N, K))
+    
+    W = np.matmul(gram * np.eye(N), ones)
+    W -= 2*(np.matmul(gram, C) / A)
+    W += np.matmul(ones, np.matmul(np.matmul(C.T, gram), C) * np.eye(K))
+    W /= (A**2)
+    return W
+
+
+def kernel_kmeans(X, means, epsilon=0.0, max_it=1000):
+    N = X.shape[0]      #N: Size of the dataset
+    K = means.shape[0]  #K: Number of clusters
+    W = np.zeros((N,K)) #W: Distance (Weight) matrix
+    C = np.zeros((N,K)) #C: Associations
+    Y = np.zeros(N)     #Y: Labels
+    delta = None
+    
+    #init
+    for k, m in enumerate(means):
+        W[:,k] = square_mag(Gram, m) #calc square distances
+    Y = np.argmin(W, axis=1) #find closest
+    C = np.nonzero(Y)
+    
+    for step in range(max_it):
+        
+        
+        Y = np.argmin(W, axis=1) #find closest
+        
+        tmp = means.copy()
+        for k in range(K):
+            means[k,:] = np.mean(X[Y==k,:], axis=0) #calc the means
+        means[np.isnan(means)] = 0.0 #prevent the apocalypse
+        
+        delta = np.sum((tmp - means)**2) #calc the delta of change
+        yield Y, means, delta, step #yield for mean update
+        
+        if delta <= epsilon:
+            break #converge if change event is lower-equal than epsilon
+    pass
 
 
 def dbscan(X, points, radius):
@@ -169,49 +218,104 @@ def dbscan(X, points, radius):
     pass
 
 
-def spectral(X, K, epsilon=0, sigma=1, mode='default'):
+LAPLACIAN_MODES = ('default', 'shi', 'jordan')
+class Spectral:
     '''
     '''
-    N = X.shape[0]
-    d = X.shape[1]
-    K = K-1
-    
-    def weights(X):
-        W = 0
-        for i in range(d):
-            x = X[:,i]
-            W += (x - x[:,None])**2 # [:,None] ~ Transpose!
-        W = np.exp(-W/sigma)
-        return W
+
+    def __init__(self, X=None, gamma=1, epsilon=0, mode='default'):
+        self.__gamma = float(gamma) if float(gamma) > 0 else 1
+        self.__epsilon = float(epsilon)
+        self.__mode = mode if mode else 'default'
+        self.__N = 0
+        self.__d = 0
+        self.__W = 0
+        self.__D = 0
+        self.__L = 0
+        self.__eigval = 0
+        self.__eigvec = 0
+        self.set(X, gamma, epsilon, mode)
         
-    def degrees(W):
-        D = np.sum(W, axis=1)*np.eye(N)
-        return D
-    
-    def laplacian(W, D, mode='default'):
-        L = D-W
-        if mode == 'shi':
-            D = np.linalg.inv(D)
-            return D*L*D
-        elif mode == 'jodran':
-            D = np.linalg.inv(D)
-            return D*L
-        else:
-            return L
-    
-    def cluster(eigvec):
-        if K == 0:
-            return np.zeros([N,1])
+    def set(self, X=None, gamma=None, epsilon=None, mode=None):
+        recalc = False
+        if isinstance(X, np.ndarray):
+            self.__X = X
+            self.__N = X.shape[0]
+            self.__d = X.shape[1]
+            recalc = True
         
-        C = np.zeros([N, K])
-        for k in range(0,K):
-            C[:,k] = eigvec[k+1] > 0
-        return C
+        if gamma != None:
+            self.__gamma = gamma
+            recalc = True
+        
+        if recalc:
+            self.__W = kernel.RBF(self.__X, self.__X, gamma)
+        
+        if epsilon != None:
+            self.__epsilon = epsilon
+            recalc = True
+        
+        if recalc:
+            if self.__epsilon:
+                self.__D = np.sum(self.__W > self.__epsilon, axis=1)*np.eye(self.__N)
+            else:
+                self.__D = np.sum(self.__W, axis=1)*np.eye(self.__N)
+        
+        if mode != None:
+            self.__mode = mode
+            recalc = True
+        
+        if recalc:
+            L = self.__D - self.__W
+            if mode == 'shi':
+                D = np.sqrt(D)
+                D = np.linalg.inv(self.__D)
+                self.__L = D*L*D
+            elif mode == 'jodran':
+                D = np.linalg.inv(self.__D)
+                self.__L = D*L
+            elif mode == 'default':
+                self.__L = L
+            else:
+                raise ValueError("Unknown mode!")
+        
+            self.__eigval, self.__eigvec = np.linalg.eig(L)
+        pass
     
-    W = weights(X)
-    D = degrees(W)
-    L = laplacian(W, D, mode)
-    eigval, eigvec = np.linalg.eig(L)
-    C = cluster(eigvec)
+    def cluster(self, K, mode='select'):
+        X = self.__eigvec[:,0:K]
+        means = init_kmeans(X, K, mode)
+        return kmeans(X, means)
+
+    @property
+    def X(self): return self.__X
     
-    return L, eigval, eigvec, C
+    @property
+    def N(self): return self.__N
+    
+    @property
+    def d(self): return self.__d
+    
+    @property
+    def gamma(self): return self.__gamma
+    
+    @property
+    def epsilon(self): return self.__epsilon
+    
+    @property
+    def mode(self): return self.__mode
+    
+    @property
+    def W(self): return self.__W
+    
+    @property
+    def D(self): return self.__D
+    
+    @property
+    def L(self): return self.__L
+    
+    @property
+    def eigval(self): return self.__eigval
+    
+    @property
+    def eigvec(self): return self.__eigvec

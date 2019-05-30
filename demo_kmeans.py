@@ -87,7 +87,7 @@ def main(args):
         cast=float
         )
     
-    mode = args.epsilon if args.epsilon else myinput(
+    mode = args.mode if args.mode else myinput(
         "Choose an initialization mode.\n    > " +
         "\n    > ".join(KMEANS_INIT_MODES) +
         "\n    mode (select): ",
@@ -120,7 +120,7 @@ def main(args):
         plt.show(block=False)
         plt.pause(0.1) #give a update pause
     
-    print("Done")
+    print("Done!")
     plt.show() #stay figure
     return 0
 

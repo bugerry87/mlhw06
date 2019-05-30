@@ -38,11 +38,33 @@ def init_argparse(parents=[]):
         help="The number of cluster centers.",
         default=None
         )
+        
+    parser.add_argument(
+        '--gamma', '-g',
+        type=int,
+        help="The energy factor of similarity.",
+        default=None
+        )
     
     parser.add_argument(
         '--epsilon', '-e',
         type=int,
-        help="The convergence threshold.",
+        help="The edge weight threshold for partially connected graphs.",
+        default=None
+        )
+    
+    parser.add_argument(
+        '--laplacian_mode', '-L',
+        type=int,
+        help="The mode of how to compute Laplacian Matrix.",
+        default=None
+        )
+    
+    parser.add_argument(
+        '--kmeans_mode', '-K',
+        type=int,
+        help="The mode of how to initialize KMeans.",
+        choices=KMEANS_INIT_MODES,
         default=None
         )
     
@@ -60,15 +82,56 @@ def main(args):
         default='circle.txt'
         )
     
-    #Load data
+    centers = args.centers if args.centers else myinput(
+        "The number of cluster centers.\n" +
+        "    centers (2): ",
+        default=2,
+        cast=int
+        )
+    
+    gamma = args.gamma if args.gamma else myinput(
+        "The energy factor of similarity.\n" +
+        "    gamma (1): ",
+        default=1,
+        cast=float
+        )
+    
+    epsilon = args.epsilon if args.epsilon else myinput(
+        "The edge weight threshold for partially connected graphs.\n" +
+        "    epsilon (0): ",
+        default=0.0,
+        cast=float
+        )
+    
+    laplacian_mode = args.laplacian_mode if args.laplacian_mode else myinput(
+        "Choose a Laplacian computation mode.\n    > " +
+        "\n    > ".join(LAPLACIAN_MODES) +
+        "\n    laplacian_mode (default): ",
+        default='default',
+        cast=lambda laplacian_mode: laplacian_mode if laplacian_mode in LAPLACIAN_MODES else raise_(ValueError("Unknown mode"))
+        )
+    
+    kmeans_mode = args.kmeans_mode if args.kmeans_mode else myinput(
+        "Choose a KMeans initialization mode.\n    > " +
+        "\n    > ".join(KMEANS_INIT_MODES) +
+        "\n    kmeans_mode (select): ",
+        default='select',
+        cast=lambda kmeans_mode: kmeans_mode if kmeans_mode in KMEANS_INIT_MODES else raise_(ValueError("Unknown mode"))
+        ) 
+    
     print("Load data...")
     X = np.genfromtxt(data, delimiter=',')
     
-    L, eigval, eigvec, C = spectral(X, 2, sigma=1, mode='jordan')
+    print("Calc spectral...")
+    spectral = Spectral(X, gamma, epsilon, laplacian_mode)
     
-    print(C.T)
-    
-    plt.scatter(X[:,0], X[:,1], s=1, c=C.T[0])
+    print("Run clustering...")
+    for Y, means, delta, step in spectral.cluster(centers, kmeans_mode):
+        plt.scatter(X[:,0], X[:,1], s=1, c=Y)
+        plt.title("Cluster step: {}".format(step))
+        plt.show(block=False)
+        plt.pause(0.1)
+    print("Done!")  
     plt.show()
     
     return 0
