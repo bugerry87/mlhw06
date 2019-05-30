@@ -4,7 +4,6 @@
 
 #Global libs
 from argparse import ArgumentParser
-import numpy as np
 import matplotlib.pyplot as plt
 
 #Local libs
@@ -47,6 +46,13 @@ def init_argparse(parents=[]):
         default=None
         )
     
+    parser.add_argument(
+        '--mode', '-m',
+        help="Choose an initialization mode.",
+        choices=KMEANS_INIT_MODES,
+        default=None
+        )
+    
     return parser
 
 
@@ -81,10 +87,19 @@ def main(args):
         cast=float
         )
     
+    mode = args.epsilon if args.epsilon else myinput(
+        "Choose an initialization mode.\n    > " +
+        "\n    > ".join(KMEANS_INIT_MODES) +
+        "\n    mode (select): ",
+        default='select',
+        cast=lambda mode: mode if mode in KMEANS_INIT_MODES else raise_(ValueError("Unknown mode"))
+        )    
+    
     #Load data
     print("Load data...")
-    X = np.genfromtxt(data, delimiter=',')    
-    means = init_kmeans(X, centers, 'kmeans++')
+    X = np.genfromtxt(data, delimiter=',')   
+    print("Init means with mode: {}".format(mode))
+    means = init_kmeans(X, centers, mode)
     
     #Run KMeans
     _, axes = arrange_subplots(2)
@@ -107,7 +122,7 @@ def main(args):
     
     print("Done")
     plt.show() #stay figure
-
+    return 0
 
 if __name__ == '__main__':
     parser = init_argparse()

@@ -65,6 +65,7 @@ def kmeans(X, means, epsilon=0.0, max_it=100):
     pass
 
 
+KMEANS_INIT_MODES = ['zeros', 'select', 'uniform', 'normal', 'kmeans++']
 def init_kmeans(X, K, mode='zeros'):
     ''' init_kmeans(X, K, mode='free') -> means
     Initialize K cluster means on dataset X.
@@ -167,3 +168,50 @@ def dbscan(X, points, radius):
         C += 1
     pass
 
+
+def spectral(X, K, epsilon=0, sigma=1, mode='default'):
+    '''
+    '''
+    N = X.shape[0]
+    d = X.shape[1]
+    K = K-1
+    
+    def weights(X):
+        W = 0
+        for i in range(d):
+            x = X[:,i]
+            W += (x - x[:,None])**2 # [:,None] ~ Transpose!
+        W = np.exp(-W/sigma)
+        return W
+        
+    def degrees(W):
+        D = np.sum(W, axis=1)*np.eye(N)
+        return D
+    
+    def laplacian(W, D, mode='default'):
+        L = D-W
+        if mode == 'shi':
+            D = np.linalg.inv(D)
+            return D*L*D
+        elif mode == 'jodran':
+            D = np.linalg.inv(D)
+            return D*L
+        else:
+            return L
+    
+    def cluster(eigvec):
+        if K == 0:
+            return np.zeros([N,1])
+        
+        C = np.zeros([N, K])
+        for k in range(0,K):
+            C[:,k] = eigvec[k+1] > 0
+        return C
+    
+    W = weights(X)
+    D = degrees(W)
+    L = laplacian(W, D, mode)
+    eigval, eigvec = np.linalg.eig(L)
+    C = cluster(eigvec)
+    
+    return L, eigval, eigvec, C

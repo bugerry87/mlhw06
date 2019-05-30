@@ -33,27 +33,20 @@ def init_argparse(parents=[]):
         )
 
     parser.add_argument(
-        '--min_points', '-p',
+        '--centers', '-k',
         type=int,
-        help="The number minimal points for cluster growing.",
+        help="The number of cluster centers.",
         default=None
         )
     
     parser.add_argument(
-        '--radius', '-r',
-        nargs='*',
-        type=float,
-        help="The radius for cluster growing. Can be multy-dimensional.",
+        '--epsilon', '-e',
+        type=int,
+        help="The convergence threshold.",
         default=None
         )
     
     return parser
-
-
-def plot2D_dbscan(ax, X, Y, x):
-    ax.scatter(X[:,0], X[:,1], s=1, c=Y)
-    ax.scatter(x[0], x[1], s=100, c='r', marker='x')
-
 
 def main(args):
     '''
@@ -67,42 +60,20 @@ def main(args):
         default='circle.txt'
         )
     
-    min_points = args.min_points if args.min_points else myinput(
-        "The number minimal points for cluster growing.\n" +
-        "    min_points (3): ",
-        default=3,
-        cast=int
-        )
-    
-    radius = args.radius if args.radius else myinput(
-        "The radius for cluster growing. Can be multy-dimensional.\n" +
-        "    radius (0.1): ",
-        default=0.1,
-        cast=lambda x: np.array(x, dtype=float)
-        )
-    
     #Load data
     print("Load data...")
     X = np.genfromtxt(data, delimiter=',')
     
-    #Run DBScan
-    _, axes = arrange_subplots(1)
+    L, eigval, eigvec, C = spectral(X, 2, sigma=1, mode='jordan')
     
-    print("Compute DBScan...")
-    for Y, x, step in dbscan(X, min_points, radius): #Extract update steps of the generator
-        axes[0].clear()
-        plot2D_dbscan(axes[0], X, Y, x)
-        axes[0].title.set_text("DBScan step: {}".format(step))
-        
-        plt.show(block=False)
-        plt.pause(0.01) #give a update pause
+    print(C.T)
     
-    print("Done")
-    plt.show() #stay figure
+    plt.scatter(X[:,0], X[:,1], s=1, c=C.T[0])
+    plt.show()
+    
     return 0
 
 if __name__ == '__main__':
     parser = init_argparse()
     args, _ = parser.parse_known_args()
     main(args)
-    

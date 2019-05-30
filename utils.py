@@ -4,6 +4,7 @@
 #Global libs
 import numpy as np
 import matplotlib.pyplot as plt
+from time import time
 
 
 def myinput(prompt, default=None, cast=None):
@@ -42,3 +43,10 @@ def arrange_subplots(pltc):
         axes = np.array([axes]) #fix format so it can be used consistently.
     
     return fig, axes
+
+
+last_call = 0
+def time_delta():
+    global last_call
+    delta = time() - last_call
+    return delta
