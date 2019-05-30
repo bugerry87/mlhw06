@@ -166,7 +166,13 @@ def dbscan(X, points, radius):
     The utilization of the radius is very low.
     
     Args:
-        X:
+        X: The dataset.
+        points: Minimal number of points around core-points.
+        radius: The scan radius.
+    Yields:
+        Y: The labels.
+        x: The current scan point.
+        step: The step counter.
     '''
     #guided by https://github.com/chrisjmccormick/dbscan
     N = X.shape[0]
@@ -196,6 +202,10 @@ def dbscan(X, points, radius):
         Check the given point under index i to be:
         core-point, border-point, or noice.
         
+        Args:
+            i: The index of the point to be scanned.
+        Returns:
+            n: Indices of processable neighbors.
         '''
         n = square_mag(X, X[i]) <= radius
         if sum(n) >= points:
@@ -220,7 +230,10 @@ def dbscan(X, points, radius):
 
 LAPLACIAN_MODES = ('default', 'shi', 'jordan')
 class Spectral:
-    '''
+    '''Spectral(X=None, gamma=1, epsilon=0, mode='default')
+    Container class for spectral clustering.
+    Computes the (W)eights, (D)egrees, (L)aplacian Matrix,
+    the eigenvalues and eigenvectors of a given dataset (X).
     '''
 
     def __init__(self, X=None, gamma=1, epsilon=0, mode='default'):
@@ -237,6 +250,16 @@ class Spectral:
         self.set(X, gamma, epsilon, mode)
         
     def set(self, X=None, gamma=None, epsilon=None, mode=None):
+        ''' set(X=None, gamma=None, epsilon=None, mode=None)
+        Use this function to change one or several properties.
+        Recomputes the depending properties as required.
+        
+        Args:
+            X: Set the dataset - updates the whole spectral information
+            gamma: Set gamma - updates W, D, L, eigval and eigvec
+            epsilon: Set epsilon - updates D, L, eigval and eigvec
+            mode: Set the mode - updates L, eigval and eigvec
+        '''
         recalc = False
         if isinstance(X, np.ndarray):
             self.__X = X
@@ -283,6 +306,20 @@ class Spectral:
         pass
     
     def cluster(self, K, mode='select'):
+        ''' cluster(K, mode='select') -> kmeans generator
+        Initialize and returns a KMeans generator.
+        (See kmeans)
+        
+        Args:
+            K: Number of cluster centers
+            mode: The initialization mode (See init_kmeans)
+        Returns:
+            Generator of KMeans, yields:
+                Y: The labels
+                means: The cluster centers
+                delta: The update delta
+                step: The update step counter
+        '''
         X = self.__eigvec[:,0:K]
         means = init_kmeans(X, K, mode)
         return kmeans(X, means)
