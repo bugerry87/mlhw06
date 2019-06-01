@@ -1,4 +1,5 @@
 '''
+Author: Gerald Baulig
 '''
 
 #Global libs

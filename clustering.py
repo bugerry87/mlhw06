@@ -1,5 +1,5 @@
 '''
-
+Author: Gerald Baulig
 '''
 
 #Global libs
@@ -26,93 +26,6 @@ def square_mag(a, b):
     return np.sum((a-b)**2, axis=1)
 
 
-KMEANS_INIT_MODES = ('zeros', 'select', 'uniform', 'normal', 'kmeans++')
-def init_kmeans(X, K, mode='zeros'):
-    ''' init_kmeans(X, K, mode='free') -> means
-    Initialize K cluster means on dataset X.
-    
-    Args:
-        X: The dataset.
-        K: The number of cluster means.
-        mode: The mode how to initialize the cluster means.
-            zeros = All means start at zero.
-                (Requires centered dataset)
-            uniform = Uniform random distributed.
-                (Requires centered dataset)
-            normal = Normal random distributed.
-                (Requires centered dataset)
-            select = Selects random points of the dataset.
-            kmeans++ = Selects a random point and rearranges the
-                probabillities of selecting the next point according
-                to the distance.
-    Returns:
-        means: The cluster means.
-    '''
-    N = X.shape[0]
-    d = X.shape[1]
-    means = np.zeros((K,d))
-    if mode=='select':
-        means = X[np.random.choice(range(N), K),:]
-    if mode=='uniform':
-        pass
-    elif mode=='normal':
-        pass
-    elif mode=='kmeans++':
-        #guided by https://stackoverflow.com/questions/5466323/how-exactly-does-k-means-work
-        means[0,:] = X[np.random.choice(range(N), 1),:] #pick one
-        for k in range(1,K):
-            W = square_mag(X, means[k-1]) #get the distances
-            p = np.cumsum(W/np.sum(W)) #spread probabillities from 0 to 1
-            i = p.searchsorted(np.random.rand(), 'right') #pick next center to random distance
-            means[k,:] = X[i,:]
-    else: #zeros
-        pass
-    return means
-
-
-def kmeans(X, means, epsilon=0.0, max_it=1000):
-    ''' kmeans(X, means, epsilon=0.0) -> yields Y,  means, delta, step
-    A generator for simple KMeans clustering.
-    
-    Usage:
-        See demo_kmeans.py
-    Args:
-        X: The data N-by-d, where
-            N=num datapoints
-            d=dimensions
-        means: The cluster centers.
-        epsilon: Convergence threshold.
-            (default=0)
-    Yields:
-        Y: The labels or cluster association.
-        means: The updated cluster centers.
-        delta: The distance to the update step.
-        step: The iteration step.
-    '''
-    N = X.shape[0]      #N: Size of the dataset
-    K = means.shape[0]  #K: Number of clusters
-    W = np.zeros((N,K)) #W: Distance (Weight) matrix
-    delta = None
-    
-    for step in range(max_it):
-        for k, m in enumerate(means):
-            W[:,k] = square_mag(X, m) #calc square distances
-        
-        Y = np.argmin(W, axis=1) #find closest
-        
-        tmp = means.copy()
-        for k in range(K):
-            means[k,:] = np.mean(X[Y==k,:], axis=0) #calc the means
-        means[np.isnan(means)] = 0.0 #prevent the apocalypse
-        
-        delta = np.sum((tmp - means)**2) #calc the delta of change
-        yield Y, means, delta, step #yield for mean update
-        
-        if delta <= epsilon:
-            break #converge if change event is lower-equal than epsilon
-    pass
-
-
 def kernel_trick(gram, C):
     N = gram.shape[0]
     K = C.shape[1]
@@ -126,29 +39,113 @@ def kernel_trick(gram, C):
     return W
 
 
-def kernel_kmeans(X, means, epsilon=0.0, max_it=1000):
+KMEANS_INIT_MODES = ('mean', 'select', 'uniform', 'normal', 'kmeans++')
+def init_kmeans(X, K, mode='mean'):
+    ''' init_kmeans(X, K, mode='free') -> means
+    Initialize K cluster means on dataset X.
+    
+    Args:
+        X: The dataset.
+        K: The number of cluster means.
+        mode: The mode how to initialize the cluster means.
+            mean = All means start (almost) at the mean of the dataset.
+                Pro: The result is determenistic.
+                Con: Needs more iterations.
+            uniform = Uniform random distributed.
+                Pro: May work well on uniform distributed datasets.
+                Con: Ks may get lost in huge data gaps.
+            normal = Normal random distributed.
+                Pro: May work well on normal distributed datasets.
+                Con: Ks may get lost in huge data gaps.
+            select = Selects random points of the dataset.
+                Pro: Makes sure that each K has at least one point.
+                Con: Not determenistic like all the other random approaches.
+            kmeans++ = Selects a random point and rearranges the
+                probabillities of selecting the next point according
+                to the distance.
+                Pro: May have an appropriate distributed of Ks.
+                Con: Great effort for a negligible improvment.
+    Returns:
+        means: The cluster means.
+    '''
+    N = X.shape[0]
+    d = X.shape[1]
+    
+    if mode=='mean':
+        #One can not take the absolute mean.
+        #The first K would claim all points and the algo stuck.
+        #Get the means and add a small portion of the variance.
+        #This ensures a small error and the Ks will swarm out.
+        #Pro: The result is determenistic.
+        #Con: Needs more iterations.
+        means = np.tile(np.mean(X, axis=0), (K,1)) + np.var(X, axis=0) * 1e-10
+    elif mode=='select':
+        means = X[np.random.choice(range(N), K),:]
+    elif mode=='uniform':
+        means = np.random.rand(K,d) * np.var(X, axis=0) + np.mean(X, axis=0)
+    elif mode=='normal':
+        means = np.random.randn(K,d) * np.var(X, axis=0) + np.mean(X, axis=0)
+    elif mode=='kmeans++':
+        #guided by https://stackoverflow.com/questions/5466323/how-exactly-does-k-means-work
+        means = np.zeros((K,d))
+        means[0,:] = X[np.random.choice(range(N), 1),:] #pick one
+        for k in range(1,K):
+            W = square_mag(X, means[k-1]) #get the distances
+            p = np.cumsum(W/np.sum(W)) #spread probabillities from 0 to 1
+            i = p.searchsorted(np.random.rand(), 'right') #pick next center to random distance
+            means[k,:] = X[i,:]
+    else:
+        raise ValueError("Unknown mode!")
+    return means
+
+
+def kmeans(X, means, epsilon=0.0, max_it=1000, is_kernel=False):
+    ''' kmeans(X, means, epsilon=0.0, max_it=1000, isKernel=False) -> yields Y,  means, delta, step
+    A generator for simple KMeans clustering.
+    
+    Usage:
+        See demo_kmeans.py
+    Args:
+        X: The data N-by-d, where
+            N=num datapoints
+            d=dimensions
+        means: The cluster centers.
+        epsilon: Convergence threshold.
+            (default=0)
+        max_it: 
+        isKernel: 
+    Yields:
+        Y: The labels or cluster association.
+        means: The updated cluster centers.
+        delta: The distance to the update step.
+        step: The iteration step.
+    '''
     N = X.shape[0]      #N: Size of the dataset
     K = means.shape[0]  #K: Number of clusters
     W = np.zeros((N,K)) #W: Distance (Weight) matrix
-    C = np.zeros((N,K)) #C: Associations
-    Y = np.zeros(N)     #Y: Labels
+    C = np.zeros((N,K)) #C: Accosiation matrix
     delta = None
     
-    #init
-    for k, m in enumerate(means):
-        W[:,k] = square_mag(Gram, m) #calc square distances
-    Y = np.argmin(W, axis=1) #find closest
-    C = np.nonzero(Y)
+    if is_kernel:
+        for k, m in enumerate(means):
+            W[:,k] = square_mag(X, m) #calc square distances
+        Y = np.argmin(W, axis=1) #find closest
+        C[:,Y] = 1
     
     for step in range(max_it):
-        
+        if is_kernel:
+            W = kernel_trick(X,C)
+        else:
+            for k, m in enumerate(means):
+                W[:,k] = square_mag(X, m) #calc square distances
         
         Y = np.argmin(W, axis=1) #find closest
         
         tmp = means.copy()
         for k in range(K):
-            means[k,:] = np.mean(X[Y==k,:], axis=0) #calc the means
-        means[np.isnan(means)] = 0.0 #prevent the apocalypse
+            C[:,k] = Y==k
+            if any(C[:,k]):
+                means[k,:] = np.mean(X[Y==k,:], axis=0) #calc the means
         
         delta = np.sum((tmp - means)**2) #calc the delta of change
         yield Y, means, delta, step #yield for mean update
