@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 '''
+Executable script to demonstrate Spectral Clustering.
+Plots the Spectral Clustering clustering process stepwise.
+Optionally records a MP4 video.
+
 Author: Gerald Baulig
 '''
 
@@ -72,7 +76,13 @@ def init_argparse(parents=[]):
     return parser
 
 def main(args):
-    '''
+    ''' main(args) -> exit code
+    The main function to execute this script.
+    
+    Args:
+        args: The namespace object of an ArgumentParser.
+    Returns:
+        An exit code. (0=OK)
     '''
     
     #Validate input. If not given switch to interactive mode!
@@ -127,12 +137,18 @@ def main(args):
     spectral = Spectral(X, gamma, epsilon, laplacian_mode)
     
     print("Run clustering...")
+    fig, axes = arrange_subplots(1)
+    
     for Y, means, delta, step in spectral.cluster(centers, kmeans_mode):
-        plt.scatter(X[:,0], X[:,1], s=1, c=Y)
-        plt.title("Cluster step: {}".format(step))
-        plt.show(block=False)
-        plt.pause(0.1)
-    print("Done!")  
+        if plt.fignum_exists(fig.number):
+            axes[0].clear()
+            axes[0].scatter(X[:,0], X[:,1], s=1, c=Y)
+            axes[0].title.set_text("Cluster step: {}".format(step))
+            plt.show(block=False)
+            plt.pause(0.1)
+        else:
+            return 1
+    print("Done!")
     plt.show()
     
     return 0

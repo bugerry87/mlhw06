@@ -205,12 +205,14 @@ def dbscan(X, points, radius):
             n: Indices of processable neighbors.
         '''
         n = square_mag(X, X[i]) <= radius
-        if sum(n) >= points:
-            n[i] = False #Do not count the current core point.
+        #Do not count the current core point.
+        if sum(n) > points:
             n = np.logical_and(n, np.logical_or(Y==0, Y==-1)) #check for unprocessed points
+            n[i] = False
             Y[n] = C
             return np.where(n)[0]
         else:
+            n = np.logical_and(n, Y==0)
             Y[n] = -1
             return np.ndarray(0)
         pass
@@ -239,6 +241,7 @@ class Spectral:
         self.__mode = mode if mode else 'default'
         self.__N = 0
         self.__d = 0
+        self.__C = 0
         self.__W = 0
         self.__D = 0
         self.__L = 0
@@ -269,7 +272,7 @@ class Spectral:
             recalc = True
         
         if recalc:
-            self.__W = kernel.RBF(self.__X, self.__X, gamma)
+            self.__W = kernel.RBF(self.__X, self.__X, {'gamma':gamma})
         
         if epsilon != None:
             self.__epsilon = epsilon
@@ -288,10 +291,10 @@ class Spectral:
         if recalc:
             L = self.__D - self.__W
             if mode == 'shi':
-                D = np.sqrt(D)
+                D = np.sqrt(self.__D)
                 D = np.linalg.inv(self.__D)
                 self.__L = D*L*D
-            elif mode == 'jodran':
+            elif mode == 'jordan':
                 D = np.linalg.inv(self.__D)
                 self.__L = D*L
             elif mode == 'default':
@@ -318,38 +321,62 @@ class Spectral:
                 step: The update step counter
         '''
         X = self.__eigvec[:,0:K]
+        #self.__C = np.zeros((self.__N, K))
         means = init_kmeans(X, K, mode)
         return kmeans(X, means)
+        #self.__C
 
     @property
-    def X(self): return self.__X
+    def X(self):
+        '''The inserted dataset.'''
+        return self.__X
     
     @property
-    def N(self): return self.__N
+    def N(self):
+        '''Number of datapoints.'''
+        return self.__N
     
     @property
-    def d(self): return self.__d
+    def d(self):
+        '''The dimension of the dataset.'''
+        return self.__d
     
     @property
-    def gamma(self): return self.__gamma
+    def gamma(self):
+        '''The gamma value for the RBF kernel.'''
+        return self.__gamma
     
     @property
-    def epsilon(self): return self.__epsilon
+    def epsilon(self):
+        '''Epsilon for knn mode.'''
+        return self.__epsilon
     
     @property
-    def mode(self): return self.__mode
+    def mode(self):
+        '''The KMeans initialization mode.'''
+        return self.__mode
     
     @property
-    def W(self): return self.__W
+    def W(self):
+        '''The weight matrix.'''
+        return self.__W
     
     @property
-    def D(self): return self.__D
+    def D(self):
+        '''The degree matrix.'''
+        return self.__D
     
     @property
-    def L(self): return self.__L
+    def L(self):
+        '''The laplacian matrix.'''
+        return self.__L
     
     @property
-    def eigval(self): return self.__eigval
+    def eigval(self):
+        '''The eigenvalues extracted from L.'''
+        return self.__eigval
     
     @property
-    def eigvec(self): return self.__eigvec
+    def eigvec(self):
+        '''The eigenvectors extracted from L.'''
+        return self.__eigvec

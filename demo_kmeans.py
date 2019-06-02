@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 '''
+Executable script to demonstrate KMeans.
+Plots the KMeans clustering process stepwise.
+Optionally records a MP4 video.
+
 Author: Gerald Baulig
 '''
 
@@ -9,6 +13,8 @@ import matplotlib.pyplot as plt
 
 #Local libs
 import kernel
+import clustering
+import utils
 from clustering import *
 from utils import *
 
@@ -65,9 +71,14 @@ def init_argparse(parents=[]):
     
     parser.add_argument(
         '--params', '-p',
-        type=int,
         help="Parameters for the kernel, if required. " +
             "E.g: 'gamma=1.0, sigma=0.5'",
+        default=None
+        )
+    
+    parser.add_argument(
+        '--video', '-V',
+        help="A filename for video record.",
         default=None
         )
     
@@ -75,29 +86,42 @@ def init_argparse(parents=[]):
 
 
 def plot2D_kmeans(ax, X, Y, means):
+    ''' plot2D_kmeans(ax, X, Y, means)
+    Plots the KMeans status to given axes.
+    
+    Args:
+        ax: The matplotlib axes.
+        X: The ground truth dataset.
+        Y: The assigned cluster labels.
+        means: The cluster centers.
+    '''
     ax.scatter(X[:,0], X[:,1], s=1, c=Y)
     ax.scatter(means[:,0], means[:,1], s=100, c='r', marker='x')
     
     
-def plot_convergence(ax, step, deltas):
-    plot([step-1, step], deltas, c='r')
+def plot_convergence(ax, step, delta):
+    ''' plot_convergence(ax, step, delta)
+    Plots the convergence of the KMeans process
+    based on the update delta.
+    
+    Args:
+        ax: The matplotlib axes.
+        step: The update step number.
+        delta: The update delta.
+    '''
+    ax.scatter(step, delta, c='r')
     ax.set_xlabel('step')
     ax.set_ylabel('delta')
 
 
-def parse_kernel_params(arg_string):
-    if arg_string:
-        arg_string = arg_string.strip()
-        params = args.params.split(',')
-        params = [p.split('=') for p in params]
-        params = {p[0]:p[1] for p in params}
-        return params
-    else:
-        return None
-
-
 def main(args):
-    '''
+    ''' main(args) -> exit code
+    The main function to execute this script.
+    
+    Args:
+        args: The namespace object of an ArgumentParser.
+    Returns:
+        An exit code. (0=OK)
     '''
     
     #Validate input. If not given switch to interactive mode!
@@ -144,10 +168,16 @@ def main(args):
             "    params (gamma=1.0): ",
             default='gamma=1.0'
             )
-        args.params = parse_kernel_params(args.params)
+        args.params = kernel.parse_params(args.params)
         kernel_func = getattr(kernel, args.kernel)
     else:
         kernel_func = None
+    
+    args.video = args.video if args.video else myinput(
+        "The filename for video record.\n" + 
+        "    video (None): ",
+        default=None
+        )
     
     #Load data
     print("\nLoad data...")
@@ -166,26 +196,46 @@ def main(args):
     means = init_kmeans(X, args.centers, args.mode)
     
     #Run KMeans
-    _, axes = arrange_subplots(2)
+    fig, axes = arrange_subplots(2)
     axes[1].title.set_text("Convergence")
-    old_delta = 0
     
     print("\nCompute KMeans...")
-    for Y, means, delta, step in kmeans(X, means, args.epsilon): #Extract update steps of the generator
-        print("Mean update:\n    {}".format(means))
-        
+    def plot_update(fargs):
+        Y = fargs[0]
+        means = fargs[1]
+        delta = fargs[2]
+        step = fargs[3]
+        print("Render step: {}".format(step))
         axes[0].clear()
         plot2D_kmeans(axes[0], GT, Y, means)
         axes[0].title.set_text("KMeans step: {}".format(step))
-        
-        plot_convergence(axes[1], step, np.sqrt([old_delta, delta]))
-        old_delta = delta
-        
-        plt.show(block=False)
-        plt.pause(0.1) #give a update pause
+        plot_convergence(axes[1], step, np.sqrt(delta))
     
-    print("Done!")
-    plt.show() #stay figure
+    if args.video:
+        import os
+        import matplotlib
+        import matplotlib.animation as ani
+        
+        dir = os.path.dirname(os.path.realpath(args.video))
+        if not os.path.isdir(dir):
+            os.mkdir(dir)
+        
+        Writer = ani.writers['ffmpeg'](fps=1, metadata=dict(artist='Gerald Baulig'), bitrate=1800)
+        run_kmeans = lambda: kmeans(X, means, args.epsilon)
+        plot_ani = ani.FuncAnimation(fig, plot_update, run_kmeans, interval=5000)
+        plot_ani.save(args.video, writer=Writer)
+        print("\nSave video to {}".format(args.video))
+    else:
+        for Y, means, delta, step in kmeans(X, means, args.epsilon): #Extract update steps of the generator
+            if plt.fignum_exists(fig.number):
+                plot_update((Y, means, delta, step))
+                plt.show(block=False)
+                plt.pause(0.1) #give a update pause
+            else:
+                return 1
+        plt.show() #stay figure
+    
+    print("\nDone!")
     return 0
 
 if __name__ == '__main__':

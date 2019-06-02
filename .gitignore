@@ -2,9 +2,6 @@
 *.pyc
 __pycache__
 
-#Matlab
-.asv
-
 #3rd-party
 *.zip
 *.rar
@@ -13,6 +10,8 @@ __pycache__
 
 #Rich files
 *.docx
+*.mp4
+*.html
 
 #Folders
 junk/
