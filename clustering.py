@@ -27,14 +27,21 @@ def square_mag(u, v):
 
 
 def kernel_trick(gram, C):
+    ''' kernel_trick(gram, C) -> W
+    Computes a Weight-Matrix of unsimilarity via "Kernel-Trick".
+    
+    Args:
+        gram: The Gram-Matrix of a Kernel-Function.
+        C: An Association-Matrix with cluster assigments per column.
+    '''
     N = gram.shape[0]
     K = C.shape[1]
     A = np.sum(C,axis=0)
     ones = np.ones((N, K))
     
-    W = np.matmul(gram * np.eye(N), ones)
-    W -= 2*(np.matmul(gram, C) / A)
-    W += np.matmul(ones, np.matmul(np.matmul(C.T, gram), C) * np.eye(K))
+    W = np.dot(gram * np.eye(N), ones)
+    W -= 2*(np.dot(gram, C) / A)
+    W += np.dot(ones, np.dot(np.dot(C.T, gram), C) * np.eye(K))
     W /= (A**2)
     return W
 

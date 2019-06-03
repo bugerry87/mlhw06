@@ -7,7 +7,7 @@ Author: Gerald Baulig
 #Global libs
 import numpy as np
 
-__all__ = ['eucledian', 'linear', 'RBF', 'linearRBF', 'none']
+__all__ = ['euclidean', 'linear', 'RBF', 'linearRBF', 'none']
 
 none = None
 
@@ -23,8 +23,8 @@ def parse_params(arg_string):
         params: The related dictionary of key=value.
     '''
     if arg_string:
-        arg_string = arg_string.strip()
-        params = args.params.split(',')
+        params = arg_string.strip()
+        params = params.split(',')
         params = [p.split('=') for p in params]
         params = {p[0]:p[1] for p in params}
         return params
@@ -32,9 +32,9 @@ def parse_params(arg_string):
         return {}
 
 
-def eucledian(u, v, params={}):
+def euclidean(u, v, params={}):
     ''' linear(u, v, params={}) -> G
-    A simple eucledian kernel.
+    A simple euclidean kernel.
     Calculates the distance of each pairing.
         k(u,v) = (u - v.T)^2
     
@@ -88,7 +88,7 @@ def RBF(u, v, params={}):
         G: The Gram-Matrix of an RBF kernel
     '''
     g = float(params['gamma']) if 'gamma' in params else 1.0
-    return np.exp(-g * eucledian(u,v))
+    return np.exp(-g * euclidean(u,v))
 
 
 def linearRBF(u, v, params={}):

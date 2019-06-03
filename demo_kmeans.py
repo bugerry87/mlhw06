@@ -66,7 +66,6 @@ def init_argparse(parents=[]):
     
     parser.add_argument(
         '--kernel', '-K',
-        metavar='INT',
         type=int,
         help="Choose a kernel for kernel KMeans.",
         choices=kernel.__all__,
@@ -239,9 +238,8 @@ def main(args):
                 plt.pause(0.1) #give a update pause
             else:
                 return 1
+        print("\nDone!")
         plt.show() #stay figure
-    
-    print("\nDone!")
     return 0
 
 if __name__ == '__main__':

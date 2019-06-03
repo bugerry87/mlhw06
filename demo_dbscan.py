@@ -27,7 +27,7 @@ def init_argparse(parents=[]):
         parser: The ArgumentParsers.
     '''
     parser = ArgumentParser(
-        description="Demo for Clustering 2D-point-clouds via SVM",
+        description="Demo for clustering via DBScan",
         parents=parents
         )
     

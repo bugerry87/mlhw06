@@ -27,7 +27,7 @@ def init_argparse(parents=[]):
         parser: The ArgumentParsers.
     '''
     parser = ArgumentParser(
-        description="Demo for Clustering 2D-point-clouds via SVM",
+        description="Demo for clustering via Spectral Clustering",
         parents=parents
         )
     
@@ -158,8 +158,6 @@ def main(args):
     axes[2].plot(range(spectral.eigval.shape[0]), spectral.eigval)
     axes[2].title.set_text("Eigenvalues")
     
-    #axes[3].plot(range(spectral.eigval.shape[0]), np.flip(spectral.eigvec[idx,:centers]))
-    #axes[3].title.set_text("First {} Eigenvectors".format(centers))
     axes[3].scatter(spectral.eigvec[:,2], spectral.eigvec[:,1], s=1, c=Y)
     axes[3].title.set_text("Eigenspace 2D")
     
