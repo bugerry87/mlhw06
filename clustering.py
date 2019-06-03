@@ -10,7 +10,7 @@ import numpy as np
 import kernel
 
 
-def square_mag(a, b):
+def square_mag(u, v):
     ''' square_mag(a, b) -> squared magnitude
     Calculates the row-wise squared magnitude.
     This function is preferably used for distance comparisons,
@@ -18,12 +18,12 @@ def square_mag(a, b):
         np.sum((a-b)**2, axis=1)
     
     Args:
-        a: numpy.ndarray
-        b: numpy.ndarray
+        u: numpy.ndarray
+        v: numpy.ndarray
     Returns:
         The row-wise squared magnitude of a and b.
     '''
-    return np.sum((a-b)**2, axis=1)
+    return np.sum((u-v)**2, axis=1)
 
 
 def kernel_trick(gram, C):
@@ -241,7 +241,6 @@ class Spectral:
         self.__mode = mode if mode else 'default'
         self.__N = 0
         self.__d = 0
-        self.__C = 0
         self.__W = 0
         self.__D = 0
         self.__L = 0
@@ -321,10 +320,8 @@ class Spectral:
                 step: The update step counter
         '''
         X = self.__eigvec[:,0:K]
-        #self.__C = np.zeros((self.__N, K))
         means = init_kmeans(X, K, mode)
         return kmeans(X, means)
-        #self.__C
 
     @property
     def X(self):

@@ -102,8 +102,8 @@ def main(args):
     
     gamma = args.gamma if args.gamma else myinput(
         "The energy factor of similarity.\n" +
-        "    gamma (1): ",
-        default=1,
+        "    gamma (50): ",
+        default=50,
         cast=float
         )
     
@@ -137,17 +137,32 @@ def main(args):
     spectral = Spectral(X, gamma, epsilon, laplacian_mode)
     
     print("Run clustering...")
-    fig, axes = arrange_subplots(1)
+    fig, axes = arrange_subplots(4)
+    fig.set_size_inches(7, 7)
     
     for Y, means, delta, step in spectral.cluster(centers, kmeans_mode):
         if plt.fignum_exists(fig.number):
             axes[0].clear()
             axes[0].scatter(X[:,0], X[:,1], s=1, c=Y)
-            axes[0].title.set_text("Cluster step: {}".format(step))
+            axes[0].title.set_text("SC gamma: {}, KM step: {}".format(gamma, step))
             plt.show(block=False)
             plt.pause(0.1)
         else:
             return 1
+    
+    idx = np.argsort(Y)
+    W = spectral.W[idx,:]**(1/gamma)
+    axes[1].imshow(W[:,idx])
+    axes[1].title.set_text("Weight Matrix")
+    
+    axes[2].plot(range(spectral.eigval.shape[0]), spectral.eigval)
+    axes[2].title.set_text("Eigenvalues")
+    
+    #axes[3].plot(range(spectral.eigval.shape[0]), np.flip(spectral.eigvec[idx,:centers]))
+    #axes[3].title.set_text("First {} Eigenvectors".format(centers))
+    axes[3].scatter(spectral.eigvec[:,2], spectral.eigvec[:,1], s=1, c=Y)
+    axes[3].title.set_text("Eigenspace 2D")
+    
     print("Done!")
     plt.show()
     

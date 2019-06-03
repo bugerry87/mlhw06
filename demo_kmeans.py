@@ -30,18 +30,20 @@ def init_argparse(parents=[]):
         parser: The ArgumentParsers.
     '''
     parser = ArgumentParser(
-        description="Demo for Clustering 2D-point-clouds via SVM",
+        description="Demo for clustering via (Kernel-)KMeans",
         parents=parents
         )
     
     parser.add_argument(
         '--data', '-X',
+        metavar='FILEPATH',
         help="The filename of a csv with datapoints.",
         default=None
         )
 
     parser.add_argument(
         '--centers', '-k',
+        metavar='INT',
         type=int,
         help="The number of cluster centers.",
         default=None
@@ -49,6 +51,7 @@ def init_argparse(parents=[]):
     
     parser.add_argument(
         '--epsilon', '-e',
+        metavar='INT',
         type=int,
         help="The convergence threshold.",
         default=None
@@ -63,6 +66,7 @@ def init_argparse(parents=[]):
     
     parser.add_argument(
         '--kernel', '-K',
+        metavar='INT',
         type=int,
         help="Choose a kernel for kernel KMeans.",
         choices=kernel.__all__,
@@ -71,6 +75,7 @@ def init_argparse(parents=[]):
     
     parser.add_argument(
         '--params', '-p',
+        metavar='ARGS',
         help="Parameters for the kernel, if required. " +
             "E.g: 'gamma=1.0, sigma=0.5'",
         default=None
@@ -78,6 +83,7 @@ def init_argparse(parents=[]):
     
     parser.add_argument(
         '--video', '-V',
+        metavar='FILEPATH',
         help="A filename for video record.",
         default=None
         )

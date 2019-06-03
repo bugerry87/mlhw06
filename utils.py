@@ -53,7 +53,7 @@ def arrange_subplots(pltc):
     if not isinstance(axes, np.ndarray):
         axes = np.array([axes]) #fix format so it can be used consistently.
     
-    return fig, axes
+    return fig, axes.flatten()
 
 
 last_call = 0
