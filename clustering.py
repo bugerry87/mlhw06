@@ -46,7 +46,7 @@ def kernel_trick(gram, C):
     return W
 
 
-KMEANS_INIT_MODES = ('mean', 'select', 'uniform', 'normal', 'kmeans++')
+KMEANS_INIT_MODES = ('select', 'mean', 'uniform', 'normal', 'kmeans++')
 def init_kmeans(X, K, mode='mean'):
     ''' init_kmeans(X, K, mode='free') -> means
     Initialize K cluster means on dataset X.
@@ -308,11 +308,11 @@ class Spectral:
             else:
                 raise ValueError("Unknown mode!")
         
-            self.__eigval, self.__eigvec = np.linalg.eig(L)
+            self.__eigval, self.__eigvec = np.linalg.eigh(L)
         pass
     
-    def cluster(self, K, mode='select'):
-        ''' cluster(K, mode='select') -> kmeans generator
+    def kmeans(self, K, mode='select'):
+        ''' kmeans(K, mode='select') -> kmeans generator
         Initialize and returns a KMeans generator.
         (See kmeans)
         
@@ -326,10 +326,19 @@ class Spectral:
                 delta: The update delta
                 step: The update step counter
         '''
-        X = self.__eigvec[:,0:K]
+        X = self.__eigvec[:,:K]
         means = init_kmeans(X, K, mode)
         return kmeans(X, means)
-
+    
+    def binary(self, bits):
+        if bits > 64:
+            raise ValueError("bits {} > 64!".format(bits))
+        C = self.__eigvec[:,1:bits+1] > 0
+        Y = np.zeros(self.__N, dtype=np.int64)
+        for i in range(C.shape[1]):
+            Y |= np.left_shift(C[:,i], i) 
+        return Y.flatten()
+    
     @property
     def X(self):
         '''The inserted dataset.'''

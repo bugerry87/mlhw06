@@ -161,10 +161,10 @@ def main(args):
     
     args.kernel = args.kernel if args.kernel else myinput(
         "Choose a kernel for kernel KMeans.\n    > " +
-        "\n    > ".join(kernel.__all__) +
+        "\n    > ".join(kernel.KERNELS) +
         "\n    kernel (none): ",
         default='none',
-        cast=lambda k: k if k in kernel.__all__ else raise_(ValueError("Unknown kernel"))
+        cast=lambda k: k if k in kernel.KERNELS else raise_(ValueError("Unknown kernel"))
         )
     
     if args.kernel != 'none':

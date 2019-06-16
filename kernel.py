@@ -7,8 +7,7 @@ Author: Gerald Baulig
 #Global libs
 import numpy as np
 
-__all__ = ['euclidean', 'linear', 'RBF', 'linearRBF', 'none']
-
+KERNELS = ['euclidean', 'linear', 'RBF', 'linearRBF', 'none']
 none = None
 
 
